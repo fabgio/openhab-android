@@ -13,12 +13,14 @@
 
 package org.openhab.habdroid.ui
 
+
 import android.content.Context
 import android.os.Bundle
 import android.view.MenuItem
 import androidx.core.net.toUri
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.commit
+import com.danielstone.materialaboutlibrary.BuildConfig
 import com.danielstone.materialaboutlibrary.MaterialAboutFragment
 import com.danielstone.materialaboutlibrary.items.MaterialAboutActionItem
 import com.danielstone.materialaboutlibrary.items.MaterialAboutItemOnClickAction
@@ -30,9 +32,7 @@ import com.mikepenz.aboutlibraries.ui.LibsSupportFragment
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import org.openhab.habdroid.BuildConfig
-import org.openhab.habdroid.R
-import org.openhab.habdroid.databinding.ActivityAboutBinding
+import org.openhab.habdroid.ui.databinding.ActivityAboutBinding
 import org.openhab.habdroid.util.ScreenLockMode
 import org.openhab.habdroid.util.Util
 import org.openhab.habdroid.util.openInAppStore

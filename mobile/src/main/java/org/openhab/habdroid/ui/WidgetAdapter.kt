@@ -131,7 +131,6 @@ import org.openhab.habdroid.util.CacheManager
 import org.openhab.habdroid.util.HttpClient
 import org.openhab.habdroid.util.IconBackground
 import org.openhab.habdroid.util.ImageConversionPolicy
-import org.openhab.habdroid.util.MjpegStreamer
 import org.openhab.habdroid.util.PrefKeys
 import org.openhab.habdroid.util.asColorTemperatureInKelvinToColor
 import org.openhab.habdroid.util.beautify
