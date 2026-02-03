@@ -38,9 +38,8 @@ import javax.net.ssl.X509KeyManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.channels.ClosedSendChannelException
-import kotlinx.coroutines.channels.ConflatedBroadcastChannel
-import kotlinx.coroutines.channels.onClosed
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -100,7 +99,7 @@ class ConnectionFactory internal constructor(
         val activeCloud: CloudConnectionResult?
     )
 
-    private val stateChannel = ConflatedBroadcastChannel(StateHolder(null, null, null, null))
+    private val stateFlow = MutableStateFlow(StateHolder(null, null, null, null))
 
     interface UpdateListener {
         fun onActiveConnectionChanged()
@@ -161,7 +160,7 @@ class ConnectionFactory internal constructor(
                 // When coming back from background, re-do connectivity check for
                 // local connections, as the reachability of the local server might have
                 // changed since we went to background
-                val (_, active, _, _) = stateChannel.value
+                val (_, active, _, _) = stateFlow.value
                 val local = active?.connection === activeConn?.local ||
                     (active?.failureReason as? NoUrlInformationException)?.wouldHaveUsedLocalConnection() == true
                 if (local) {
@@ -278,15 +277,14 @@ class ConnectionFactory internal constructor(
 
     private fun updateState(
         callListenersOnChange: Boolean,
-        primary: ConnectionResult? = stateChannel.value.primary,
-        active: ConnectionResult? = stateChannel.value.active,
-        primaryCloud: CloudConnectionResult? = stateChannel.value.primaryCloud,
-        activeCloud: CloudConnectionResult? = stateChannel.value.activeCloud
+        primary: ConnectionResult? = stateFlow.value.primary,
+        active: ConnectionResult? = stateFlow.value.active,
+        primaryCloud: CloudConnectionResult? = stateFlow.value.primaryCloud,
+        activeCloud: CloudConnectionResult? = stateFlow.value.activeCloud
     ) {
-        val prevState = stateChannel.value
+        val prevState = stateFlow.value
         val newState = StateHolder(primary, active, primaryCloud, activeCloud)
-        stateChannel.trySend(newState)
-            .onClosed { throw it ?: ClosedSendChannelException("Channel was closed normally") }
+        stateFlow.tryEmit(newState)
         if (!callListenersOnChange) {
             return
         }
@@ -583,10 +581,9 @@ class ConnectionFactory internal constructor(
          */
         suspend fun waitForInitialization() {
             instance.triggerConnectionUpdateIfNeededAndPending()
-            val sub = instance.stateChannel.openSubscription()
-            do {
-                val (primary, active, primaryCloud, activeCloud) = sub.receive()
-            } while (primary == null || active == null || primaryCloud == null || activeCloud == null)
+            instance.stateFlow
+                .takeWhile { it.primary == null || it.active == null || it.primaryCloud == null || it.activeCloud == null }
+                .collect { }
         }
 
         fun addListener(l: UpdateListener) {
@@ -608,7 +605,7 @@ class ConnectionFactory internal constructor(
          * The returned object will contain either a working connection, or the initialization failure cause.
          * If initialization did not finish yet, null is returned.
          */
-        val activeUsableConnection get() = instance.stateChannel.value.active
+        val activeUsableConnection get() = instance.stateFlow.value.active
 
         /**
          * Returns whether the active server has a configured local connection
@@ -623,7 +620,7 @@ class ConnectionFactory internal constructor(
         /**
          * Like {@link activeUsableConnection}, but for the primary instead of active server.
          */
-        val primaryUsableConnection get() = instance.stateChannel.value.primary
+        val primaryUsableConnection get() = instance.stateFlow.value.primary
 
         /**
          * Like {@link hasActiveLocalConnection}, but for the primary instead of active server.
@@ -644,11 +641,11 @@ class ConnectionFactory internal constructor(
          *   (in case no remote server is configured or the remote server is not an openHAB cloud instance)
          * If initialization did not finish yet, null is returned.
          */
-        val activeCloudConnection get() = instance.stateChannel.value.activeCloud
+        val activeCloudConnection get() = instance.stateFlow.value.activeCloud
 
         /**
          * Like {@link activeCloudConnection}, but for the primary instead of active server.
          */
-        val primaryCloudConnection get() = instance.stateChannel.value.primaryCloud
+        val primaryCloudConnection get() = instance.stateFlow.value.primaryCloud
     }
 }
