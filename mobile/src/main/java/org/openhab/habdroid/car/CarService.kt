@@ -146,7 +146,7 @@ class CarService :
     }
 
     override fun onSseFailure() {
-        TODO("Not yet implemented")
+        sessions.values.forEach { it.handleSseFailure() }
     }
 
     private suspend fun initializeConnectionAndLoadData(): Result<InitData>? {

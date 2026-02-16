@@ -15,6 +15,7 @@ package org.openhab.habdroid.car
 
 import android.content.Intent
 import android.util.Log
+import androidx.car.app.CarToast
 import androidx.car.app.Screen
 import androidx.car.app.ScreenManager
 import androidx.car.app.Session
@@ -30,6 +31,7 @@ import org.openhab.habdroid.model.Sitemap
 import org.openhab.habdroid.model.Widget
 import org.openhab.habdroid.util.getDefaultCarSitemapName
 import org.openhab.habdroid.util.getPrefs
+import org.openhab.habdroid.util.showToast
 import org.openhab.habdroid.util.updateDefaultCarSitemap
 
 class CarSession(
@@ -75,6 +77,10 @@ class CarSession(
         val screenManager = carContext.getCarService(ScreenManager::class.java)
         screenManager.popToRoot()
         screenManager.push(createErrorScreen(null, reason))
+    }
+
+    fun handleSseFailure() {
+        carContext.showToast(carContext.getString(R.string.error_sse_failed), CarToast.LENGTH_SHORT)
     }
 
     override fun onCreateScreen(intent: Intent): Screen {
