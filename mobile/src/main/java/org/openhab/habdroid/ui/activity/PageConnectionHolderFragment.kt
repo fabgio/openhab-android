@@ -173,17 +173,11 @@ class PageConnectionHolderFragment :
         connections.keys.filterNot { url -> url in urls }
             .forEach { url -> connections.remove(url)?.cancel() }
         for (url in urls) {
-            var handler = connections[url]
-            if (handler == null) {
-                Log.d(TAG, "Creating new handler for URL $url")
-                handler = ConnectionHandler(this, url, connection, callback)
-                connections[url] = handler
-                if (started) {
-                    handler.load()
-                }
-            } else if (handler.updateFromConnection(connection) && started) {
-                handler.load()
-            }
+            var handler: ConnectionHandler?
+            Log.d(TAG, "Creating new handler for URL $url")
+            handler = ConnectionHandler(this, url, connection, callback)
+            connections[url] = handler
+            handler.load()
         }
     }
 
@@ -230,13 +224,6 @@ class PageConnectionHolderFragment :
                 }
             }
         }
-
-        fun updateFromConnection(c: Connection): Boolean {
-            val oldClient = httpClient
-            httpClient = c.httpClient
-            return oldClient != httpClient
-        }
-
         fun cancel() {
             Log.d(TAG, "Canceling connection for URL $url")
             requestJob?.cancel()
@@ -401,7 +388,6 @@ class PageConnectionHolderFragment :
                         load()
                         return
                     }
-
                     "ALIVE" -> {
                         // We ignore 'server alive' events
                         Log.d(TAG, "Got ALIVE event")
