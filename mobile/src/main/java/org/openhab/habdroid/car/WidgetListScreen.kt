@@ -86,7 +86,7 @@ class WidgetListScreen(
         if (widget.type == Widget.Type.Frame) {
             val hasVisibleChildren = widgets
                 ?.filter { it.parentId == widget.id }
-                ?.any { it.visibility }
+                ?.any { it.visibility && (it.type == Widget.Type.Switch || it.type == Widget.Type.Selection) }
                 ?: false
             if (!hasVisibleChildren) {
                 return false
@@ -238,8 +238,9 @@ class WidgetListScreen(
     }
 
     override fun onGetTemplate(): Template {
+        val supportedTypes = setOf(Widget.Type.Switch, Widget.Type.Selection)
         val widgetsToShow = widgets
-            ?.filter { shouldShowWidget(it) }
+            ?.filter { (it.type == Widget.Type.Frame || it.type in supportedTypes) && shouldShowWidget(it) }
         val frames = widgetsToShow?.filter { it.type == Widget.Type.Frame }
 
         val headerBuilder = Header.Builder()
@@ -254,21 +255,33 @@ class WidgetListScreen(
 
         when {
             frames?.isNotEmpty() == true -> {
-                // FIXME: This assumes all widgets are part of a frame
+                val frameIds = frames.map { it.id }.toSet()
                 frames.forEach { frame ->
+                    val frameChildren = widgetsToShow.filter { it.parentId == frame.id && it.type in supportedTypes }
+                    if (frameChildren.isNotEmpty()) {
+                        val listBuilder = ItemList.Builder()
+                        frameChildren.forEach { listBuilder.addItem(buildWidgetRow(it)) }
+                        templateBuilder.addSectionedList(
+                            SectionedItemList.create(listBuilder.build(), frame.label)
+                        )
+                    }
+                }
+
+                val widgetsOutsideFrames = widgetsToShow.filter { widget ->
+                    widget.type in supportedTypes && widget.parentId !in frameIds
+                }
+                if (widgetsOutsideFrames.isNotEmpty()) {
                     val listBuilder = ItemList.Builder()
-                    widgetsToShow
-                        .filter { it.parentId == frame.id }
-                        .forEach { listBuilder.addItem(buildWidgetRow(it)) }
+                    widgetsOutsideFrames.forEach { listBuilder.addItem(buildWidgetRow(it)) }
                     templateBuilder.addSectionedList(
-                        SectionedItemList.create(listBuilder.build(), frame.label)
+                        SectionedItemList.create(listBuilder.build(), carContext.getString(R.string.car_section_header_other_items))
                     )
                 }
             }
 
             widgetsToShow != null -> {
                 val listBuilder = ItemList.Builder()
-                widgetsToShow.forEach { w ->
+                widgetsToShow.filter { it.type in supportedTypes }.forEach { w ->
                     listBuilder.addItem(buildWidgetRow(w))
                 }
                 templateBuilder.setSingleList(listBuilder.build())
