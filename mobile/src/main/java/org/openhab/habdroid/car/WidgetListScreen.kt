@@ -254,14 +254,26 @@ class WidgetListScreen(
 
         when {
             frames?.isNotEmpty() == true -> {
-                // FIXME: This assumes all widgets are part of a frame
+                val frameIds = frames.map { it.id }.toSet()
                 frames.forEach { frame ->
+                    val frameChildren = widgetsToShow.filter { it.parentId == frame.id }
+                    if (frameChildren.isNotEmpty()) {
+                        val listBuilder = ItemList.Builder()
+                        frameChildren.forEach { listBuilder.addItem(buildWidgetRow(it)) }
+                        templateBuilder.addSectionedList(
+                            SectionedItemList.create(listBuilder.build(), frame.label)
+                        )
+                    }
+                }
+
+                val widgetsOutsideFrames = widgetsToShow.filter { widget ->
+                    widget.type != Widget.Type.Frame && widget.parentId !in frameIds
+                }
+                if (widgetsOutsideFrames.isNotEmpty()) {
                     val listBuilder = ItemList.Builder()
-                    widgetsToShow
-                        .filter { it.parentId == frame.id }
-                        .forEach { listBuilder.addItem(buildWidgetRow(it)) }
+                    widgetsOutsideFrames.forEach { listBuilder.addItem(buildWidgetRow(it)) }
                     templateBuilder.addSectionedList(
-                        SectionedItemList.create(listBuilder.build(), frame.label)
+                        SectionedItemList.create(listBuilder.build(), carContext.getString(R.string.car_section_header_other_items))
                     )
                 }
             }

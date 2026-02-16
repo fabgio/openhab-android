@@ -668,6 +668,8 @@
     <string name="car_error_sitemap_load_failure">Sitemap could not be loaded</string>
     <string name="car_error_retry_button">Retry</string>
     <string name="car_error_debug_header">Failure reason:</string>
+    <string name="car_section_header_other_items">Other items</string>
+
 
     <!-- Tiles -->
     <string name="tile">Tile</string>
